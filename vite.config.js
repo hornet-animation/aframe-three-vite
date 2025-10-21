@@ -2,7 +2,7 @@ import { defineConfig } from 'vite'
 import { resolve } from 'path'
 
 export default defineConfig({
-  base: '/aframe-three-vite/', // 👈 match your GitHub repo name
+  base: '/aframe-three-vite/',   // 👈 must match repo name
   build: {
     rollupOptions: {
       input: {
