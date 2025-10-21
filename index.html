@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>AR Project | Splash Page</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <style>
+      body {
+        font-family: system-ui, sans-serif;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 100vh;
+        margin: 0;
+        background: #f5f5f5;
+        color: #333;
+      }
+      .card {
+        background: white;
+        padding: 2rem;
+        border-radius: 1rem;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        text-align: center;
+      }
+      img.qr {
+        width: 200px;
+        margin: 1rem 0;
+      }
+      a.button {
+        display: inline-block;
+        padding: 0.75rem 1.5rem;
+        background: #007bff;
+        color: white;
+        border-radius: 0.5rem;
+        text-decoration: none;
+        font-weight: bold;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="card">
+      <h1>AR Experience</h1>
+      <p>Scan this QR code to open the AR experience on your phone:</p>
+      <img class="qr" id="qr" src="" alt="QR Code" />
+      <p>Then point your phone at this marker:</p>
+      <img src="/marker/marker.png" width="200" alt="Marker Image" />
+      <br /><br />
+      <a href="/marker/marker.png" download class="button">Download Marker</a>
+    </div>
+
+    <script type="module">
+      import QRCode from 'https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js'
+
+      const url = `${window.location.origin}${window.location.pathname.replace('index.html', '')}ar.html`
+      QRCode.toDataURL(url).then(data => {
+        document.getElementById('qr').src = data
+      })
+    </script>
+  </body>
+</html>

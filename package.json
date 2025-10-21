@@ -1,0 +1,23 @@
+{
+  "name": "aframe-three-vite",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "deploy": "gh-pages -d dist"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "aframe": "^1.7.1",
+    "three": "^0.180.0"
+  },
+  "devDependencies": {
+    "vite": "^7.1.11"
+  }
+}
