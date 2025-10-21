@@ -19,11 +19,12 @@
     </style>
   </head>
   <body>
+    <img id="logo" src="assets/hornet-logo.svg" alt="Logo">
     <a-scene stats embedded arjs="sourceType: webcam;">
-      <a-marker preset="hiro">
+      <a-marker type="pattern" url="assets/pattern-star-dude.patt">
         <a-entity
         id="character"
-        gltf-model="/assets/monkey_plastic.glb"
+        gltf-model="assets/monkey_plastic.glb"
         position="0.7 0.5 0"
         scale="0.5 0.5 0.5"
         rotation="0 0 0"
