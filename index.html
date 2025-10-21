@@ -1,61 +1,66 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
   <head>
-    <meta charset="UTF-8" />
-    <title>AR Project | Splash Page</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta charset="utf-8">
+    <title>Mixamo WebAR Demo</title>
+    <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/AR-js-org/AR.js/aframe/build/aframe-ar.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/donmccurdy/aframe-extras@6.1.1/dist/aframe-extras.min.js"></script>
     <style>
-      body {
-        font-family: system-ui, sans-serif;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        height: 100vh;
-        margin: 0;
-        background: #f5f5f5;
-        color: #333;
-      }
-      .card {
-        background: white;
-        padding: 2rem;
-        border-radius: 1rem;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-        text-align: center;
-      }
-      img.qr {
+      body { margin: 0; overflow: hidden; }
+      #logo {
+        position: fixed;
+        bottom: 40px;
+        left: 40px;
+        z-index: 1000;
         width: 200px;
-        margin: 1rem 0;
-      }
-      a.button {
-        display: inline-block;
-        padding: 0.75rem 1.5rem;
-        background: #007bff;
-        color: white;
-        border-radius: 0.5rem;
-        text-decoration: none;
-        font-weight: bold;
+        height: auto;
       }
     </style>
   </head>
   <body>
-    <div class="card">
-      <h1>AR Experience</h1>
-      <p>Scan this QR code to open the AR experience on your phone:</p>
-      <img class="qr" id="qr" src="" alt="QR Code" />
-      <p>Then point your phone at this marker:</p>
-      <img src="/marker/marker.png" width="200" alt="Marker Image" />
-      <br /><br />
-      <a href="/marker/marker.png" download class="button">Download Marker</a>
-    </div>
-
-    <script type="module">
-      import QRCode from 'https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js'
-
-      const url = `${window.location.origin}${window.location.pathname.replace('index.html', '')}ar.html`
-      QRCode.toDataURL(url).then(data => {
-        document.getElementById('qr').src = data
-      })
+    <img id="logo" src="assets/hornet-logo.svg" alt="Logo">
+    <a-scene stats embedded arjs="sourceType: webcam;">
+      <a-marker type="pattern" url="assets/pattern-star-dude.patt">
+        <a-entity
+        id="character"
+        gltf-model="assets/monkey_plastic.glb"
+        position="0.7 0.5 0"
+        scale="0.5 0.5 0.5"
+        rotation="0 0 0"
+        animation-mixer="clip: *; loop: repeat; timeScale: 1">
+        </a-entity>
+      </a-marker>
+      <a-entity camera></a-entity>
+    </a-scene>
+    
+    <script>
+      // Material settings - adjust these values as needed
+      const ROUGHNESS = 0.3;  // 0 = smooth, 1 = rough
+      const METALNESS = 0.9;  // 0 = non-metallic, 1 = fully metallic
+      
+      const character = document.querySelector('#character');
+      
+      character.addEventListener('model-loaded', () => {
+        const model = character.getObject3D('mesh');
+        if (!model) return;
+        
+        model.traverse((node) => {
+          if (node.isMesh && node.material) {
+            if (Array.isArray(node.material)) {
+              node.material.forEach((mat) => {
+                mat.roughness = ROUGHNESS;
+                mat.metalness = METALNESS;
+                mat.needsUpdate = true;
+              });
+            } else {
+              node.material.roughness = ROUGHNESS;
+              node.material.metalness = METALNESS;
+              node.material.needsUpdate = true;
+            }
+          }
+        });
+      });
     </script>
   </body>
 </html>
