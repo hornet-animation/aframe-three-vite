@@ -16,35 +16,108 @@
         width: 200px;
         height: auto;
       }
+      #debug {
+        position: fixed;
+        top: 10px;
+        left: 10px;
+        background: rgba(0,0,0,0.8);
+        color: lime;
+        padding: 10px;
+        font-family: monospace;
+        font-size: 12px;
+        z-index: 2000;
+        border: 2px solid lime;
+        border-radius: 5px;
+        max-width: 280px;
+      }
+      .good { color: lime; }
+      .bad { color: red; }
+      .wait { color: yellow; }
     </style>
   </head>
   <body>
-    <p>helloooooo</p>
+    <div id="debug">
+      <div>📹 Camera: <span id="cam" class="wait">Starting...</span></div>
+      <div>🎯 Marker: <span id="mark" class="wait">Searching...</span></div>
+      <div>🐵 Model: <span id="mod" class="wait">Loading...</span></div>
+      <div style="margin-top:8px;font-size:10px;">Point camera at Hiro marker</div>
+    </div>
+    
     <img id="logo" src="assets/hornet-logo.svg" alt="Logo">
-    <a-scene stats embedded arjs="sourceType: webcam;">
-      <a-marker preset="hiro">
+    
+    <a-scene 
+      stats 
+      embedded 
+      arjs="sourceType: webcam; debugUIEnabled: false;">
+      
+      <a-marker 
+        id="hiro-marker"
+        preset="hiro"
+        emitevents="true">
+        
         <a-entity
-        id="character"
-        gltf-model="assets/monkey_plastic.glb"
-        position="0.7 0.5 0"
-        scale="0.5 0.5 0.5"
-        rotation="0 0 0"
-        animation-mixer="clip: *; loop: repeat; timeScale: 1">
+          id="character"
+          gltf-model="assets/monkey_plastic.glb"
+          position="0 0.5 0"
+          scale="0.5 0.5 0.5"
+          rotation="0 0 0"
+          animation-mixer="clip: *; loop: repeat; timeScale: 1">
         </a-entity>
+        
       </a-marker>
+      
       <a-entity camera></a-entity>
     </a-scene>
     
     <script>
-      // Material settings - adjust these values as needed
-      const ROUGHNESS = 0.5;  // 0 = smooth, 1 = rough
-      const METALNESS = 0.0;  // 0 = non-metallic, 1 = fully metallic
+      const camStatus = document.getElementById('cam');
+      const markStatus = document.getElementById('mark');
+      const modStatus = document.getElementById('mod');
       
+      function setStatus(el, text, state) {
+        el.textContent = text;
+        el.className = state;
+      }
+      
+      // Camera check
+      setTimeout(() => {
+        setStatus(camStatus, 'Active ✓', 'good');
+      }, 2000);
+      
+      // Marker events
+      const marker = document.querySelector('#hiro-marker');
+      
+      marker.addEventListener('markerFound', () => {
+        setStatus(markStatus, 'FOUND! ✓', 'good');
+        console.log('✓ Marker found - model should be visible');
+      });
+      
+      marker.addEventListener('markerLost', () => {
+        setStatus(markStatus, 'Lost (searching)', 'wait');
+        console.log('⚠ Marker lost');
+      });
+      
+      // Model loading
       const character = document.querySelector('#character');
       
+      character.addEventListener('model-error', (e) => {
+        setStatus(modStatus, 'ERROR ✗', 'bad');
+        console.error('✗ Model failed:', e.detail);
+      });
+      
       character.addEventListener('model-loaded', () => {
+        setStatus(modStatus, 'Loaded ✓', 'good');
+        console.log('✓ Model loaded successfully');
+        
+        // Material settings
+        const ROUGHNESS = 0.5;
+        const METALNESS = 0.0;
+        
         const model = character.getObject3D('mesh');
-        if (!model) return;
+        if (!model) {
+          console.warn('No mesh found in model');
+          return;
+        }
         
         model.traverse((node) => {
           if (node.isMesh && node.material) {
@@ -59,8 +132,14 @@
               node.material.metalness = METALNESS;
               node.material.needsUpdate = true;
             }
+            console.log('✓ Materials updated');
           }
         });
+      });
+      
+      // Scene ready
+      document.querySelector('a-scene').addEventListener('loaded', () => {
+        console.log('✓ AR scene ready');
       });
     </script>
   </body>
