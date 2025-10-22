@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>WebAR Demo</title>
+    <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/AR-js-org/AR.js/aframe/build/aframe-ar.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/donmccurdy/aframe-extras@6.1.1/dist/aframe-extras.min.js"></script>
+    <style>
+      body { margin: 0; overflow: hidden; }
+      #logo {
+        position: fixed;
+        bottom: 40px;
+        left: 40px;
+        z-index: 1000;
+        width: 200px;
+        height: auto;
+      }
+    </style>
+  </head>
+  <body>
+    <img id="logo" src="assets/hornet-logo.svg" alt="Logo">
+    <a-scene stats embedded arjs="sourceType: webcam;">
+      <a-marker preset="hiro">
+        <a-entity
+        id="character"
+        gltf-model="assets/mixamo_character.glb"
+        position="0 0 0"
+        scale="0.5 0.5 0.5"
+        rotation="0 0 0"
+        animation-mixer="clip: *; loop: repeat; timeScale: 1">
+        </a-entity>
+      </a-marker>
+      <a-entity camera></a-entity>
+    </a-scene>
+    
+    <script>
+      // Material settings - adjust these values as needed
+      const ROUGHNESS = 0.5;  // 0 = smooth, 1 = rough
+      const METALNESS = 0.0;  // 0 = non-metallic, 1 = fully metallic
+      
+      const character = document.querySelector('#character');
+      
+      character.addEventListener('model-loaded', () => {
+        const model = character.getObject3D('mesh');
+        if (!model) return;
+        
+        model.traverse((node) => {
+          if (node.isMesh && node.material) {
+            if (Array.isArray(node.material)) {
+              node.material.forEach((mat) => {
+                mat.roughness = ROUGHNESS;
+                mat.metalness = METALNESS;
+                mat.needsUpdate = true;
+              });
+            } else {
+              node.material.roughness = ROUGHNESS;
+              node.material.metalness = METALNESS;
+              node.material.needsUpdate = true;
+            }
+          }
+        });
+      });
+    </script>
+  </body>
+</html>
