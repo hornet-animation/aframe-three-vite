@@ -32,7 +32,7 @@ function init() {
       
       // model
       const loader = new GLTFLoader().setPath('assets/');
-      loader.load('musician.glb', async function (gltf) {
+      loader.load('musician-test.glb', async function (gltf) {
         const model = gltf.scene;
         
         // wait until the model can be added to the scene without blocking due to shader compilation
