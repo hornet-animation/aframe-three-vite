@@ -26,7 +26,7 @@ function init() {
     .setPath('assets/')
     .load('brown_photostudio_02_1k.hdr', function (texture) {
       texture.mapping = THREE.EquirectangularReflectionMapping;
-      scene.background = texture;
+      //scene.background = texture;
       scene.environment = texture;
       render();
       
@@ -60,8 +60,8 @@ function init() {
   container.appendChild(renderer.domElement);
   
   const controls = new OrbitControls(camera, renderer.domElement);
-  controls.minDistance = 1;
-  controls.maxDistance = 6;
+  controls.minDistance = 2;
+  controls.maxDistance = 3;
   controls.target.set(0, 0, -0.2);
   controls.update();
   
