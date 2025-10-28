@@ -13,12 +13,12 @@ function init() {
   const container = document.getElementById('model-viewer');
   
   camera = new THREE.PerspectiveCamera(
-    40,
+    100,
     container.clientWidth / container.clientHeight,
     0.25,
     20
   );
-  camera.position.set(-1, 3, 12);
+  camera.position.set(0, 0.1, 0);
   
   scene = new THREE.Scene();
   
@@ -32,7 +32,7 @@ function init() {
       
       // model
       const loader = new GLTFLoader().setPath('assets/');
-      loader.load('mixamo_character.glb', async function (gltf) {
+      loader.load('musician.glb', async function (gltf) {
         const model = gltf.scene;
         
         // wait until the model can be added to the scene without blocking due to shader compilation
@@ -60,7 +60,7 @@ function init() {
   container.appendChild(renderer.domElement);
   
   const controls = new OrbitControls(camera, renderer.domElement);
-  controls.minDistance = 3;
+  controls.minDistance = 1;
   controls.maxDistance = 6;
   controls.target.set(0, 0, -0.2);
   controls.update();
