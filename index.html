@@ -1,487 +1,71 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <meta charset="utf-8" />
-    <title>Universal Floor AR (Hit-test + Fallback)</title>
-
-    <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-
-    <!-- A-Frame -->
+    <meta charset="utf-8">
+    <title>WebAR Demo</title>
     <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
-
+    <script src="https://cdn.jsdelivr.net/gh/AR-js-org/AR.js/aframe/build/aframe-ar.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/donmccurdy/aframe-extras@6.1.1/dist/aframe-extras.min.js"></script>
     <style>
-      html, body { margin: 0; height: 100%; background: black; }
-      #startAR {
+      body { margin: 0; overflow: hidden; }
+      #logo {
         position: fixed;
-        left: 50%;
-        top: 50%;
-        transform: translate(-50%,-50%);
-        z-index: 99999;
-        background: linear-gradient(#00aaff,#0077cc);
-        color: white;
-        border: none;
-        padding: 18px 26px;
-        border-radius: 12px;
-        font-size: 18px;
-        font-weight: 600;
-        box-shadow: 0 8px 20px rgba(0,0,0,0.4);
-      }
-      #instructions {
-        position: fixed;
-        left: 50%;
-        top: 16px;
-        transform: translateX(-50%);
-        background: rgba(0,0,0,0.7);
-        color: white;
-        padding: 10px 16px;
-        border-radius: 10px;
-        z-index: 99998;
-        font-family: Arial, sans-serif;
-        font-size: 14px;
-      }
-      #controls {
-        position: fixed;
-        right: 12px;
-        bottom: 12px;
-        z-index: 99998;
-        display:flex;
-        gap:8px;
-      }
-      .small-btn {
-        background: rgba(0,0,0,0.6);
-        color: white;
-        border: none;
-        padding: 8px 10px;
-        border-radius: 8px;
-        font-size: 13px;
+        bottom: 40px;
+        left: 40px;
+        z-index: 1000;
+        width: 200px;
+        height: auto;
       }
     </style>
   </head>
-
   <body>
-    <button id="startAR">START AR</button>
-    <div id="instructions">Tap START AR</div>
+    <img id="logo" src="assets/hornet-logo.svg" alt="Logo">
+    <a-scene stats embedded arjs="sourceType: webcam;">
 
-    <!-- A-Frame scene - hidden until session starts -->
-    <a-scene id="scene"
-             embedded
-             renderer="colorManagement: true"
-             vr-mode-ui="enabled: false"
-             xr-mode-ui="enabled: false"
-             webxr="optionalFeatures: dom-overlay; domOverlay: {root: #instructions};"
-             visible="false">
+      <!-- vertical surfaces (screen/wall) -->
+      <a-marker preset='custom' type='pattern' url='assets/pattern-star-blue.patt'>
+        <a-entity
+          gltf-model="assets/layout_test02.glb"
+          position="0 0 0"
+          scale="3 3 3"
+          rotation="-90 0 0"
+          animation-mixer="clip: *; loop: repeat; timeScale: 1"
+          fix-materials>
+        </a-entity>
+      </a-marker>
 
-      <!-- simple reticle for hit-test mode -->
-      <a-entity id="reticle" visible="false">
-        <a-ring radius-inner="0.08" radius-outer="0.12" rotation="-90 0 0" position="0 0 0"></a-ring>
-      </a-entity>
+      <!-- horizontal surfaces (table) -->
+      <a-marker preset='custom' type='pattern' url='assets/pattern-sleeper.patt'>
+        <a-entity
+          gltf-model="assets/layout_test02.glb"
+          position="0 0 0"
+          scale="3 3 3"
+          rotation="0 0 0"
+          animation-mixer="clip: *; loop: repeat; timeScale: 1"
+          fix-materials>
+        </a-entity>
+      </a-marker>
 
-      <!-- Model (your asset) - keep path consistent with your project -->
-      <a-entity id="model"
-                gltf-model="assets/layout_test03.glb"
-                visible="false"
-                scale="2 2 2"
-                ></a-entity>
-
-      <!-- a camera is managed by WebXR (no need to declare here) -->
+      <a-entity camera></a-entity>
     </a-scene>
-
-    <div id="controls" style="display:none">
-      <button id="resetBtn" class="small-btn">Reset</button>
-      <button id="moveDownBtn" class="small-btn">Lower</button>
-      <button id="moveUpBtn" class="small-btn">Raise</button>
-    </div>
-
     <script>
-      // --------- global references ----------
-      const startButton = document.getElementById('startAR');
-      const instructions = document.getElementById('instructions');
-      const scene = document.getElementById('scene');
-      const reticle = document.getElementById('reticle');
-      const model = document.getElementById('model');
-      const controls = document.getElementById('controls');
-      const resetBtn = document.getElementById('resetBtn');
-      const downBtn = document.getElementById('moveDownBtn');
-      const upBtn = document.getElementById('moveUpBtn');
 
-      // --------- state ----------
-      let xrSession = null;
-      let hitTestSource = null;
-      let localRefSpace = null;
-      let viewerRefSpace = null;
-      let latestHit = null;
-      let usingHitTest = false; // true when real hit-test in use
-      let fallbackMode = false; // true when we use screen-space fallback
-      let placed = false;
-
-      // pinch/scale state
-      let currentScale = 1.2;
-      const MIN_SCALE = 0.4;
-      const MAX_SCALE = 3.0;
-
-      // vertical offset used by fallback drop (meters above ground to start)
-      const FALLBACK_START_DISTANCE = 1.5; // 1.5m in front of camera
-      let fallbackFloorY = null; // estimated floor y in world coordinates (set when session starts)
-
-      // Utility: convert an XR transform (DOMPointReadOnly) to three.js-like simple object
-      function posFromTransform(t) {
-        return { x: t.position.x, y: t.position.y, z: t.position.z };
-      }
-
-      // --------- manual start AR (force start) ----------
-      startButton.addEventListener('click', async () => {
-        if (!navigator.xr) {
-          alert('WebXR not supported on this device/browser.');
-          return;
-        }
-
-        try {
-          // request immersive-ar session with hit-test if available
-          xrSession = await navigator.xr.requestSession('immersive-ar', {
-            requiredFeatures: [],
-            optionalFeatures: ['dom-overlay', 'local-floor', 'hit-test'],
-            domOverlay: { root: instructions }
-          });
-
-          // attach to A-Frame renderer
-          scene.renderer.xr.setSession(xrSession);
-          scene.setAttribute('visible', 'true');
-          startButton.style.display = 'none';
-          instructions.textContent = 'Move your phone slowly to find surfaces...';
-
-          // show control buttons
-          controls.style.display = 'flex';
-
-          // wait briefly for session to initialize, then check for hit-test
-          await setupRefSpacesAndHitTest();
-
-          // enable our scene components
-          scene.setAttribute('universal-ar', '');
-          scene.setAttribute('universal-place', '');
-
-        } catch (err) {
-          alert('Failed to start AR: ' + (err && err.message ? err.message : err));
-        }
-      });
-
-      // --------- reference spaces and hit-test setup ----------
-      async function setupRefSpacesAndHitTest() {
-        try {
-          // request reference spaces
-          localRefSpace = await xrSession.requestReferenceSpace('local-floor').catch(async () => {
-            // fallback to local if local-floor not available
-            return xrSession.requestReferenceSpace('local');
-          });
-
-          viewerRefSpace = await xrSession.requestReferenceSpace('viewer');
-
-          // If requestHitTestSource exists, try to create one
-          if (xrSession.requestHitTestSource) {
-            try {
-              hitTestSource = await xrSession.requestHitTestSource({ space: viewerRefSpace });
-              usingHitTest = true;
-              fallbackMode = false;
-              console.log('Hit-test source created.');
-              instructions.textContent = 'Move phone slowly until a green reticle appears, then tap to place.';
-            } catch (e) {
-              console.warn('Hit-test source failed (will use fallback):', e);
-              usingHitTest = false;
-              fallbackMode = true;
-              instructions.textContent = 'Tap to place model (fallback mode).';
-            }
-          } else {
-            // no API for hit-test
-            usingHitTest = false;
-            fallbackMode = true;
-            instructions.textContent = 'Tap to place model (fallback mode).';
-          }
-
-          // estimate a floor y for fallback (approx camera y - 1.6m)
-          // We can obtain an initial camera pose via A-Frame's renderer
-          const xrCamera = scene.renderer.xr.getCamera ? scene.renderer.xr.getCamera() : null;
-          // if xrCamera not ready yet, set a default floor offset (will be updated later)
-          fallbackFloorY = 0; // will be corrected once pose available
-
-        } catch (err) {
-          console.error('setupRefSpacesAndHitTest error:', err);
-          usingHitTest = false;
-          fallbackMode = true;
-          instructions.textContent = 'Tap to place model (fallback mode).';
-        }
-      }
-
-      // --------- A-Frame component: universal-ar (tick to run hit-test or update fallback) ----------
-      AFRAME.registerComponent('universal-ar', {
-        init() {
-          // nothing to init here
-        },
-        tick: function (time, delta) {
-          if (!xrSession) return;
-
-          const frame = scene.renderer.xr.getFrame();
-          if (!frame) return;
-
-          // If we have a real hit-test source, use it
-          if (usingHitTest && hitTestSource === null) {
-            // try to get from global var (it may have been set)
-            hitTestSource = window._globalHitTestSource || hitTestSource;
-          }
-
-          if (usingHitTest && hitTestSource) {
-            const hitResults = frame.getHitTestResults(hitTestSource);
-            if (hitResults && hitResults.length > 0) {
-              const hit = hitResults[0];
-              const pose = hit.getPose(localRefSpace);
-              if (pose) {
-                // update reticle & store latestHit
-                latestHit = pose.transform;
-                reticle.object3D.position.set(pose.transform.position.x, pose.transform.position.y, pose.transform.position.z);
-                reticle.object3D.quaternion.set(
-                  pose.transform.orientation.x,
-                  pose.transform.orientation.y,
-                  pose.transform.orientation.z,
-                  pose.transform.orientation.w
-                );
-                reticle.setAttribute('visible', 'true');
-                instructions.textContent = 'Tap the screen to place the model';
-                return; // done
+      // Component to render only inside faces (inverted normals)
+      AFRAME.registerComponent('fix-materials', {
+        init: function() {
+          this.el.addEventListener('model-loaded', () => {
+            this.el.object3D.traverse((node) => {
+              if (node.isMesh && node.material) {
+                // Force front-side rendering only (hide inverted normals)
+                node.material.side = THREE.FrontSide;
+                node.material.needsUpdate = true;
               }
-            }
-            // no hits this frame
-            reticle.setAttribute('visible', 'false');
-            latestHit = null;
-            return;
-          }
-
-          // FALLBACK mode: update a virtual reticle projected in front of camera
-          if (fallbackMode) {
-            // get camera pose to compute a projected point in front
-            const p = scene.renderer.xr.getCamera && scene.renderer.xr.getCamera();
-            if (p && p.matrixWorld) {
-              // position a point at a fixed distance in front of camera and set reticle there
-              const cameraObj = p;
-              const tempVec = new THREE.Vector3(0, 0, -FALLBACK_START_DISTANCE);
-              tempVec.applyMatrix4(cameraObj.matrixWorld);
-              // set reticle position
-              reticle.object3D.position.copy(tempVec);
-              // point flat on horizontal plane
-              reticle.object3D.rotation.set(-Math.PI/2, 0, 0);
-              reticle.setAttribute('visible', 'true');
-              instructions.textContent = 'Tap to place the model (fallback)';
-            }
-          }
+            });
+          });
         }
       });
 
-      // --------- A-Frame component: universal-place (handles tap placement, fallback drop & interactions) ----------
-      AFRAME.registerComponent('universal-place', {
-        init() {
-          // click/tap to place or move
-          window.addEventListener('click', () => this.onTap());
-
-          // pinch to scale
-          this.startDist = null;
-          this.el.addEventListener('touchstart', (e) => {
-            if (e.touches && e.touches.length === 2) {
-              this.startDist = dist(e.touches[0], e.touches[1]);
-            }
-          }, { passive: true });
-
-          this.el.addEventListener('touchmove', (e) => {
-            if (e.touches && e.touches.length === 2 && this.startDist) {
-              e.preventDefault();
-              const newDist = dist(e.touches[0], e.touches[1]);
-              const factor = newDist / this.startDist;
-              currentScale = Math.max(MIN_SCALE, Math.min(MAX_SCALE, currentScale * factor));
-              model.object3D.scale.set(currentScale, currentScale, currentScale);
-              this.startDist = newDist;
-            }
-          }, { passive: false });
-
-          // vertical move via two-finger vertical drag when model placed (nice-to-have)
-          this.twoFingerStartY = null;
-          this.el.addEventListener('touchstart', (e) => {
-            if (e.touches && e.touches.length === 2 && placed) {
-              this.twoFingerStartY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
-            }
-          }, { passive: true });
-
-          this.el.addEventListener('touchmove', (e) => {
-            if (e.touches && e.touches.length === 2 && this.twoFingerStartY !== null && placed) {
-              e.preventDefault();
-              const currentY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
-              const dy = currentY - this.twoFingerStartY;
-              // change y by small amount proportional to dy (invert so dragging up raises)
-              const deltaMeters = -dy * 0.002;
-              model.object3D.position.y += deltaMeters;
-              this.twoFingerStartY = currentY;
-            }
-          }, { passive: false });
-
-          // buttons to nudge model in fallback mode
-          resetBtn.addEventListener('click', () => {
-            model.setAttribute('visible', 'false');
-            placed = false;
-            instructions.textContent = usingHitTest ? 'Move phone slowly to find surfaces...' : 'Tap to place model (fallback)';
-          });
-
-          downBtn.addEventListener('click', () => {
-            if (placed) model.object3D.position.y -= 0.05;
-          });
-
-          upBtn.addEventListener('click', () => {
-            if (placed) model.object3D.position.y += 0.05;
-          });
-        },
-
-        onTap() {
-          // If using real hit-test and we have a hit pose, place at that pose
-          if (usingHitTest && latestHit) {
-            placeAtTransform(latestHit);
-            return;
-          }
-
-          // Fallback: place in front of camera and drop to estimated floor
-          placeFallback();
-        }
-      });
-
-      // helper: calculate distance between two touch points
-      function dist(t1, t2) {
-        const dx = t1.clientX - t2.clientX;
-        const dy = t1.clientY - t2.clientY;
-        return Math.sqrt(dx*dx + dy*dy);
-      }
-
-      // place model at a given XR transform (Pose.transform)
-      function placeAtTransform(transform) {
-        model.object3D.position.set(transform.position.x, transform.position.y, transform.position.z);
-        model.object3D.quaternion.set(
-          transform.orientation.x,
-          transform.orientation.y,
-          transform.orientation.z,
-          transform.orientation.w
-        );
-        // show model
-        model.setAttribute('visible', 'true');
-        placed = true;
-        instructions.textContent = 'Model placed. Use pinch to scale, two-finger drag to fine-tune height.';
-      }
-
-      // fallback placement: position model in front of camera and drop to floor visually
-      function placeFallback() {
-        const xrCamera = scene.renderer.xr.getCamera && scene.renderer.xr.getCamera();
-        if (!xrCamera || !xrCamera.matrixWorld) {
-          instructions.textContent = 'Camera not ready yet. Move device.';
-          return;
-        }
-
-        // compute a point in front of camera
-        const forward = new THREE.Vector3(0, 0, -1).applyMatrix4(xrCamera.matrixWorld).sub(new THREE.Vector3().setFromMatrixPosition(xrCamera.matrixWorld)).normalize();
-        const camPos = new THREE.Vector3().setFromMatrixPosition(xrCamera.matrixWorld);
-        const startPos = camPos.clone().add(forward.clone().multiplyScalar(FALLBACK_START_DISTANCE));
-        // set initial model position
-        model.object3D.position.copy(startPos);
-        // orient model to face camera (optional)
-        const lookAt = camPos.clone();
-        model.object3D.lookAt(lookAt);
-        // show model immediately
-        model.setAttribute('visible', 'true');
-
-        // attempt to "drop" to approximate floor: we estimate floor y as cameraY - 1.6m if not set
-        let estimatedFloorY = fallbackFloorY;
-        if (estimatedFloorY === null || estimatedFloorY === 0) {
-          estimatedFloorY = camPos.y - 1.6; // human average height assumption
-        }
-        // animate downward until model base reaches floor (approx)
-        // to be conservative, compute model bounding box height after model loads
-        const mesh = model.getObject3D('mesh');
-        let modelHeight = 0.5; // default
-        if (mesh) {
-          const box = new THREE.Box3().setFromObject(mesh);
-          modelHeight = box.getSize(new THREE.Vector3()).y || 0.5;
-        }
-
-        // desired Y = floorY + modelHeight/2
-        const targetY = estimatedFloorY + modelHeight / 2;
-        // if targetY is higher than start, just leave it; else animate down
-        const startY = model.object3D.position.y;
-        const dy = startY - targetY;
-        if (dy > 0.02) {
-          // simple animation (50ms steps)
-          const steps = 12;
-          let step = 0;
-          const interval = setInterval(() => {
-            step++;
-            const t = step / steps;
-            model.object3D.position.y = startY - dy * t;
-            if (step >= steps) {
-              clearInterval(interval);
-              placed = true;
-              instructions.textContent = 'Model placed (fallback). Use pinch to scale or two-finger drag to adjust height.';
-            }
-          }, 30);
-        } else {
-          placed = true;
-          instructions.textContent = 'Model placed (fallback). Use pinch to scale or two-finger drag to adjust height.';
-        }
-      }
-
-      // ---------- expose hitTestSource globally if created via session.requestHitTestSource elsewhere ----------
-      // Some browsers or code paths might set it separately; keep fallback checks robust.
-      window._globalHitTestSource = hitTestSource;
-
-      // ---------- UI niceties: if session ends ----------
-      function onSessionEnded() {
-        instructions.textContent = 'Session ended. Tap START AR to begin again.';
-        startButton.style.display = 'block';
-        scene.setAttribute('visible', 'false');
-        model.setAttribute('visible', 'false');
-        reticle.setAttribute('visible', 'false');
-        placed = false;
-      }
-
-      // cleanup when session ends
-      // note: A-Frame will fire xr.sessionend - listen on renderer.xr
-      scene.renderer.xr.addEventListener && scene.renderer.xr.addEventListener('sessionend', onSessionEnded);
-
-      // ---------- small safety: ensure controls hidden until start ----------
-      controls.style.display = 'none';
-
-      // show controls after session created (watch variable)
-      const checkSessionInterval = setInterval(() => {
-        if (xrSession) {
-          controls.style.display = 'flex';
-          clearInterval(checkSessionInterval);
-        }
-      }, 500);
-
-      // ---------- optional: attempt to create hit test source also directly (some devices require different API) ----------
-      // We'll set window._globalHitTestSource if successful for other components to use.
-      async function tryCreateHitTestSourceDirectly() {
-        if (!xrSession) return;
-        try {
-          if (xrSession.requestHitTestSource) {
-            const viewer = await xrSession.requestReferenceSpace('viewer');
-            const src = await xrSession.requestHitTestSource({ space: viewer });
-            window._globalHitTestSource = src;
-            hitTestSource = src;
-            usingHitTest = true;
-            fallbackMode = false;
-            console.log('Direct hit-test source created.');
-          }
-        } catch (e) {
-          console.warn('Direct hit-test creation failed:', e);
-        }
-      }
-
-      // call periodically to try to create hit-test source (some devices delay readiness)
-      const hitTestTryTimer = setInterval(() => {
-        if (!xrSession) return;
-        if (!usingHitTest) tryCreateHitTestSourceDirectly();
-      }, 1500);
-
-      // --------- end of script ----------
     </script>
+
   </body>
 </html>
