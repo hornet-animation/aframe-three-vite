@@ -15,17 +15,144 @@
         z-index: 1000;
         width: 200px;
         height: auto;
+        opacity: 0;
+        transition: opacity 0.5s ease;
+      }
+      #logo.visible {
+        opacity: 1;
+      }
+      
+      /* Splash Screen Styles */
+      #splash-screen {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: 9999;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        pointer-events: all;
+      }
+      
+      #splash-screen.hidden {
+        pointer-events: none;
+      }
+      
+      .curtain {
+        position: absolute;
+        left: 0;
+        width: 100%;
+        height: 55%;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        transition: transform 1.8s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+        z-index: 2;
+      }
+      
+      .curtain-left {
+        top: -5%;
+        transform: translateY(0);
+      }
+      
+      .curtain-right {
+        bottom: -5%;
+        transform: translateY(0);
+      }
+      
+      #splash-screen.opening .curtain-left {
+        transform: translateY(-100%);
+      }
+      
+      #splash-screen.opening .curtain-right {
+        transform: translateY(100%);
+      }
+      
+      .splash-content {
+        position: relative;
+        z-index: 3;
+        text-align: center;
+        color: white;
+        transition: opacity 0.3s ease;
+      }
+      
+      #splash-screen.opening .splash-content {
+        opacity: 0;
+      }
+      
+      .splash-title {
+        font-family: 'Arial', sans-serif;
+        font-size: 2.5rem;
+        font-weight: bold;
+        margin-bottom: 1rem;
+        text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+      }
+      
+      .tap-button {
+        display: inline-block;
+        padding: 15px 40px;
+        background: rgba(255, 255, 255, 0.2);
+        border: 2px solid white;
+        border-radius: 50px;
+        color: white;
+        font-size: 1.2rem;
+        font-weight: bold;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        backdrop-filter: blur(10px);
+        animation: pulse 2s infinite;
+        user-select: none;
+        -webkit-user-select: none;
+        -webkit-tap-highlight-color: transparent;
+      }
+      
+      .tap-button:active {
+        transform: scale(0.95);
+        background: rgba(255, 255, 255, 0.3);
+      }
+      
+      @keyframes pulse {
+        0%, 100% {
+          transform: scale(1);
+        }
+        50% {
+          transform: scale(1.05);
+        }
+      }
+      
+      .tap-instruction {
+        margin-top: 10px;
+        font-size: 0.9rem;
+        opacity: 0.8;
+      }
+      
+      .instruction-text {
+        margin-bottom: 30px;
+        font-size: 1rem;
+        opacity: 0.9;
+        line-height: 1.5;
       }
     </style>
   </head>
   <body>
+    <!-- Splash Screen -->
+    <div id="splash-screen">
+      <div class="curtain curtain-left"></div>
+      <div class="curtain curtain-right"></div>
+      <div class="splash-content">
+        <h1 class="splash-title">Happy Holidays</h1>
+        <p class="instruction-text">instructions: </p>
+        <div class="tap-button" id="start-button">TAP HERE</div>
+      </div>
+    </div>
+    
     <img id="logo" src="assets/hornet-logo.svg" alt="Logo">
     <a-scene stats embedded arjs="sourceType: webcam;">
 
       <!-- vertical surfaces (screen/wall) -->
-      <a-marker preset='custom' type='pattern' url='assets/pattern-star-blue.patt'>
+      <a-marker preset='custom' type='pattern' url='assets/pattern-bigger.patt'>
         <a-entity
-          gltf-model="assets/layout_test03.glb"
+          gltf-model="assets/birdmanSleeperBaked_512_v003C.glb"
           position="0 0 0"
           scale="3 3 3"
           rotation="-90 0 0"
@@ -37,7 +164,7 @@
       <!-- horizontal surfaces (table) -->
       <a-marker preset='custom' type='pattern' url='assets/pattern-sleeper.patt'>
         <a-entity
-          gltf-model="assets/layout_test03.glb"
+          gltf-model="assets/birdmanSleeperBaked_512_v003C.glb"
           position="0 0 0"
           scale="3 3 3"
           rotation="0 0 0"
@@ -63,6 +190,29 @@
             });
           });
         }
+      });
+
+      // Splash screen functionality
+      document.addEventListener('DOMContentLoaded', function() {
+        const startButton = document.getElementById('start-button');
+        const splashScreen = document.getElementById('splash-screen');
+        const logo = document.getElementById('logo');
+        
+        startButton.addEventListener('click', function() {
+          // Add opening animation class
+          splashScreen.classList.add('opening');
+          
+          // Remove splash screen after animation completes
+          setTimeout(() => {
+            splashScreen.classList.add('hidden');
+            splashScreen.style.display = 'none';
+            
+            // Show logo after curtains open
+            setTimeout(() => {
+              logo.classList.add('visible');
+            }, 200);
+          }, 1800);
+        });
       });
 
     </script>
