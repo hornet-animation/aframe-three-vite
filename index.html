@@ -2,7 +2,7 @@
 <html>
   <head>
     <meta charset="utf-8">
-    <title>WebAR Demo</title>
+    <title>Hornet Holiday Card 2025</title>
     <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/gh/AR-js-org/AR.js/aframe/build/aframe-ar.min.js"></script>
     <script src="https://cdn.jsdelivr.net/gh/donmccurdy/aframe-extras@6.1.1/dist/aframe-extras.min.js"></script>
@@ -46,6 +46,7 @@
         width: 100%;
         height: 55%;
         background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+        background-image: url('your_background_image.jpg');
         transition: transform 1.8s cubic-bezier(0.68, -0.55, 0.265, 1.55);
         z-index: 2;
       }
@@ -147,25 +148,26 @@
     </div>
     
     <img id="logo" src="assets/hornet-logo.svg" alt="Logo">
-    <a-scene embedded arjs="sourceType: webcam;">
+    <a-scene stats embedded arjs="sourceType: webcam;">
 
       <!-- vertical surfaces (screen/wall) -->
-      <a-marker preset='custom' type='pattern' url='assets/pattern-sleeper.patt'>
+      <a-marker preset='custom' type='pattern' url='assets/pattern-star-render.patt'>
         <a-entity
-          gltf-model="assets/train07.glb"
+          gltf-model="assets/giftbox08.glb"
           position="0 0 0"
-          scale="3 3 3"
+          scale="6 6 6"
           rotation="-90 0 0"
           animation-mixer="clip: *; loop: repeat; timeScale: 0"
           fix-materials
           class="train-model">
+          <!--<a-entity id="animated-frames" position="0.7 -0.1 0" scale="1 1 1" rotation="0 0 0"></a-entity> -->
         </a-entity>
       </a-marker>
 
       <!-- horizontal surfaces (table) -->
       <a-marker preset='custom' type='pattern' url='assets/pattern-star-blue.patt'>
         <a-entity
-          gltf-model="assets/train07.glb"
+          gltf-model="assets/giftbox08.glb"
           position="0 0 0"
           scale="3 3 3"
           rotation="0 0 0"
@@ -174,10 +176,78 @@
           class="train-model">
         </a-entity>
       </a-marker>
-
+ 
       <a-entity camera></a-entity>
     </a-scene>
     <script>
+
+      // Component to cycle through animation frames (dynamically loaded)
+      AFRAME.registerComponent('frame-animator', {
+        schema: {
+          fps: { type: 'number', default: 30 },
+          totalFrames: { type: 'number', default: 30 }, 
+          folderPath: { type: 'string', default: 'assets/background-moving-frames/' },
+          framePrefix: { type: 'string', default: 'frame_' },
+          offsetX: { type: 'number', default: 0 },
+          offsetY: { type: 'number', default: 0 },
+          offsetZ: { type: 'number', default: 0 },
+          scaleOffset: { type: 'number', default: 1 }
+        },
+        
+        init: function() {
+          this.frames = [];
+          this.currentFrame = 0;
+          this.frameTime = 1000 / this.data.fps;
+          this.elapsedTime = 0;
+          this.isLoading = true;
+          
+          // Load all frames dynamically
+          this.loadFrames();
+        },
+        
+        loadFrames: function() {
+          const container = this.el;
+          
+          for (let i = 0; i < this.data.totalFrames; i++) {
+            // Format frame number with leading zeros (0000, 0001, etc.)
+            const frameNum = i.toString().padStart(4, '0');
+            const framePath = `${this.data.folderPath}${this.data.framePrefix}${frameNum}.glb`;
+            
+            // Create entity for this frame
+            const frameEntity = document.createElement('a-entity');
+            frameEntity.setAttribute('gltf-model', framePath);
+            frameEntity.setAttribute('visible', i === 0); // Only first frame visible
+            frameEntity.setAttribute('fix-materials', '');
+            frameEntity.classList.add('anim-frame');
+            
+            container.appendChild(frameEntity);
+            this.frames.push(frameEntity);
+          }
+          
+          this.isLoading = false;
+          console.log(`Loaded ${this.data.totalFrames} animation frames`);
+        },
+        
+        tick: function(time, deltaTime) {
+          if (this.isLoading || this.frames.length === 0) return;
+          
+          this.elapsedTime += deltaTime;
+          
+          if (this.elapsedTime >= this.frameTime) {
+            // Hide current frame
+            this.frames[this.currentFrame].setAttribute('visible', false);
+            
+            // Move to next frame (loop back to 0 after last frame)
+            this.currentFrame = (this.currentFrame + 1) % this.frames.length;
+            
+            // Show next frame
+            this.frames[this.currentFrame].setAttribute('visible', true);
+            
+            // Reset elapsed time
+            this.elapsedTime = 0;
+          }
+        }
+      });
 
       // Component to render only inside faces (inverted normals)
       AFRAME.registerComponent('fix-materials', {
@@ -199,6 +269,8 @@
         const startButton = document.getElementById('start-button');
         const splashScreen = document.getElementById('splash-screen');
         const logo = document.getElementById('logo');
+        const model = document.querySelector('#model');
+        const animatedFrames = document.querySelector('#animated-frames');
         
         startButton.addEventListener('click', function() {
           // Add opening animation class
@@ -224,6 +296,16 @@
             }, 200);
           }, 1800);
         });
+
+        if (model) {
+          model.setAttribute('follow-camera-rotation', '');
+          model.setAttribute('pinch-zoom', '');
+        }
+        
+        if (animatedFrames) {
+          animatedFrames.setAttribute('frame-animator', 'fps: 30; totalFrames: 30');
+        }
+
       });
 
     </script>
