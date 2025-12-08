@@ -151,7 +151,7 @@ body {
   font-weight: bold;
   cursor: pointer;
   transition: all 0.3s ease;
-  animation: fadeInPulse 2s ease-in-out infinite;
+  animation: floatAndGlow 3s ease-in-out infinite;
   user-select: none;
   -webkit-user-select: none;
   -webkit-tap-highlight-color: transparent;
@@ -163,8 +163,8 @@ body {
 }
 
 .tap-button:active {
-  transform: scale(0.95);
-  background: rgba(255, 255, 255, 0.3);
+  transform: translateX(-50%) scale(0.95);
+  filter: brightness(1.2);
 }
 
 .tap-button img {
@@ -173,12 +173,14 @@ body {
   display: block;
 }
 
-@keyframes pulse {
+@keyframes floatAndGlow {
   0%, 100% {
-    transform: scale(1);
+    transform: translateX(-50%) translateY(0);
+    filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.3));
   }
   50% {
-    transform: scale(1.05);
+    transform: translateX(-50%) translateY(-8px);
+    filter: drop-shadow(0 0 20px rgba(255, 255, 255, 0.6));
   }
 }
 
