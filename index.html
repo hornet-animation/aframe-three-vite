@@ -3,137 +3,10 @@
   <head>
     <meta charset="utf-8">
     <title>Hornet Holiday Card 2025</title>
+    <link rel="stylesheet" href="styles.css">
     <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/gh/AR-js-org/AR.js/aframe/build/aframe-ar.min.js"></script>
     <script src="https://cdn.jsdelivr.net/gh/donmccurdy/aframe-extras@6.1.1/dist/aframe-extras.min.js"></script>
-    <style>
-      body { margin: 0; overflow: hidden; }
-      #logo {
-        position: fixed;
-        bottom: 40px;
-        left: 40px;
-        z-index: 1000;
-        width: 200px;
-        height: auto;
-        opacity: 0;
-        transition: opacity 0.5s ease;
-      }
-      #logo.visible {
-        opacity: 1;
-      }
-      
-      /* Splash Screen Styles */
-      #splash-screen {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        z-index: 9999;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        pointer-events: all;
-      }
-      
-      #splash-screen.hidden {
-        pointer-events: none;
-      }
-      
-      .curtain {
-        position: absolute;
-        left: 0;
-        width: 100%;
-        height: 55%;
-        background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
-        background-image: url('your_background_image.jpg');
-        transition: transform 1.8s cubic-bezier(0.68, -0.55, 0.265, 1.55);
-        z-index: 2;
-      }
-      
-      .curtain-left {
-        top: -5%;
-        transform: translateY(0);
-      }
-      
-      .curtain-right {
-        bottom: -5%;
-        transform: translateY(0);
-      }
-      
-      #splash-screen.opening .curtain-left {
-        transform: translateY(-100%);
-      }
-      
-      #splash-screen.opening .curtain-right {
-        transform: translateY(100%);
-      }
-      
-      .splash-content {
-        position: relative;
-        z-index: 3;
-        text-align: center;
-        color: white;
-        transition: opacity 0.3s ease;
-      }
-      
-      #splash-screen.opening .splash-content {
-        opacity: 0;
-      }
-      
-      .splash-title {
-        font-family: 'Arial', sans-serif;
-        font-size: 2.5rem;
-        font-weight: bold;
-        margin-bottom: 1rem;
-        text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
-      }
-      
-      .tap-button {
-        display: inline-block;
-        padding: 15px 40px;
-        background: rgba(255, 255, 255, 0.2);
-        border: 2px solid white;
-        border-radius: 50px;
-        color: white;
-        font-size: 1.2rem;
-        font-weight: bold;
-        cursor: pointer;
-        transition: all 0.3s ease;
-        backdrop-filter: blur(10px);
-        animation: pulse 2s infinite;
-        user-select: none;
-        -webkit-user-select: none;
-        -webkit-tap-highlight-color: transparent;
-      }
-      
-      .tap-button:active {
-        transform: scale(0.95);
-        background: rgba(255, 255, 255, 0.3);
-      }
-      
-      @keyframes pulse {
-        0%, 100% {
-          transform: scale(1);
-        }
-        50% {
-          transform: scale(1.05);
-        }
-      }
-      
-      .tap-instruction {
-        margin-top: 10px;
-        font-size: 0.9rem;
-        opacity: 0.8;
-      }
-      
-      .instruction-text {
-        margin-bottom: 30px;
-        font-size: 1rem;
-        opacity: 0.9;
-        line-height: 1.5;
-      }
-    </style>
   </head>
   <body>
     <!-- Splash Screen -->
@@ -141,9 +14,13 @@
       <div class="curtain curtain-left"></div>
       <div class="curtain curtain-right"></div>
       <div class="splash-content">
-        <h1 class="splash-title">Happy Holidays</h1>
-        <p class="instruction-text">Tap to start and point your camera at the target image</p>
-        <div class="tap-button" id="start-button">START</div>
+        <div class="splash-text-content">
+          <!-- <p class="instruction-text">Find the sticker tucked inside your envelope.</p> -->
+          <!-- <p class="sub-instruction">Lay it horizontally and let your camera lock onto it.<br><br>Then tap below to crack open the box and meet your fellow travelers.</p> -->
+        </div>
+        <div class="tap-button" id="start-button">
+          <img src="assets/splash/start-button.png" alt="Start">
+        </div>
       </div>
     </div>
     
