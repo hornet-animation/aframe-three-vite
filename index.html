@@ -37,7 +37,7 @@
           animation-mixer="clip: *; loop: repeat; timeScale: 0"
           fix-materials
           class="train-model">
-          <!--<a-entity id="animated-frames" position="0.7 -0.1 0" scale="1 1 1" rotation="0 0 0"></a-entity> -->
+          <a-entity id="animated-frames" position="0 0 0" scale="1 1 1" rotation="0 0 0"></a-entity>
         </a-entity>
       </a-marker>
 
@@ -51,6 +51,7 @@
           animation-mixer="clip: *; loop: repeat; timeScale: 0"
           fix-materials
           class="train-model">
+          <a-entity id="animated-frames" position="0 0 0" scale="1 1 1" rotation="0 0 0"></a-entity>
         </a-entity>
       </a-marker>
  
@@ -63,7 +64,7 @@
         schema: {
           fps: { type: 'number', default: 30 },
           totalFrames: { type: 'number', default: 30 }, 
-          folderPath: { type: 'string', default: 'assets/background-moving-frames/' },
+          folderPath: { type: 'string', default: 'assets/background-frames/' },
           framePrefix: { type: 'string', default: 'frame_' },
           offsetX: { type: 'number', default: 0 },
           offsetY: { type: 'number', default: 0 },
@@ -180,7 +181,7 @@
         }
         
         if (animatedFrames) {
-          animatedFrames.setAttribute('frame-animator', 'fps: 30; totalFrames: 30');
+          animatedFrames.setAttribute('frame-animator', 'fps: 30; totalFrames: 240');
         }
 
       });
